@@ -9,3 +9,20 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+springdoc:
+  api-docs:
+    path: /docs
+    groups:
+      enabled: true
+
+  swagger-ui:
+    path: /swagger-ui
+    groups-order: asc
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+
+  override-with-generic-response: false
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
