@@ -62,6 +62,15 @@ public class MemberServiceImpl implements MemberService {
         return getMessage("이메일 인증 코드를 전송하였습니다.");
     }
 
+    @Override
+    public Map<String, String> confirmAuthCode(String code) {
+
+        memberAuthCodeRepository.findById(code)
+                .orElseThrow(()-> new MemberException(MemberErrorCode.INVALID_EMAIL_AUTH_CODE));
+
+        return getMessage("이메일 인증이 완료되었습니다.");
+    }
+
 
     private static Map<String, String> getMessage(String message) {
         Map<String, String> result = new HashMap<>();

@@ -19,4 +19,8 @@ public interface MemberService {
      */
     Map<String, String> sendAuthCode (String email);
 
+    /**
+     * 이메일 인증 코드 확인
+     */
+    Map<String, String> confirmAuthCode (String code);
 }
