@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.member.service;
 
+import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.global.error.exception.MemberException;
@@ -23,6 +24,9 @@ class MemberServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private MailService mailService;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -88,5 +92,40 @@ class MemberServiceTest {
                 () -> memberService.checkDuplicatedNickname(nick));
         // then
         assertEquals(exception.getErrorCode(), MemberErrorCode.DUPLICATED_NICKNAME);
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 발송 실패")
+    void sendAuthCode_Fail() {
+        String email = "test@test.com";
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("nick")
+                .build();
+
+        // given
+        given(memberRepository.findByEmail(anyString())).willReturn(Optional.of(member));
+        // when
+        MemberException exception = assertThrows(MemberException.class,
+                () -> memberService.sendAuthCode(email));
+        // then
+        assertEquals(exception.getErrorCode(), MemberErrorCode.DUPLICATED_EMAIL);
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 발송 성공")
+    void sendAuthCode_Success() {
+        String email = "test@test.com";
+
+        // given
+        given(memberRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(mailService.sendMail(anyString(), anyString())).willReturn(true);
+
+        // when
+        Map<String, String> result = memberService.sendAuthCode(email);
+
+        // then
+        assertNotNull(result.get("message"));
     }
 }
