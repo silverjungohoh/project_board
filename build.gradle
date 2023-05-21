@@ -34,6 +34,10 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
+    testImplementation ('it.ozimov:embedded-redis:0.7.3') {
+        exclude module: 'commons-logging'
+        exclude module: 'slf4j-simple'
+    }
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
 }
