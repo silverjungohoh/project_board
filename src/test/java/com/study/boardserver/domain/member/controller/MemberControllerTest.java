@@ -15,8 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.study.boardserver.global.error.type.MemberErrorCode.DUPLICATED_EMAIL;
-import static com.study.boardserver.global.error.type.MemberErrorCode.DUPLICATED_NICKNAME;
+import static com.study.boardserver.global.error.type.MemberErrorCode.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -125,5 +124,67 @@ class MemberControllerTest {
                 .andDo(print());
 
         verify(memberService).checkDuplicatedNickname(request.get("nickname"));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 전송 성공")
+    void sendAuthCode_Success() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("email", "test@test.com");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "이메일 인증 코드를 전송하였습니다.");
+
+        given(memberService.sendAuthCode(anyString())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/email-auth")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+
+        verify(memberService).sendAuthCode(request.get("email"));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 전송 실패 - 이메일 중복")
+    void sendAuthCode_Fail_DuplicatedEmail() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("email", "test@test.com");
+
+        given(memberService.sendAuthCode(anyString())).willThrow(new MemberException(DUPLICATED_EMAIL));
+
+        mockMvc.perform(post("/api/members/email-auth")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(DUPLICATED_EMAIL.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(DUPLICATED_EMAIL.getMessage()))
+                .andDo(print());
+
+        verify(memberService).sendAuthCode(request.get("email"));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 전송 실패")
+    void sendAuthCode_Fail() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("email", "test@test.com");
+
+        given(memberService.sendAuthCode(anyString())).willThrow(new MemberException(FAIL_TO_SEND_EMAIL));
+
+        mockMvc.perform(post("/api/members/email-auth")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(FAIL_TO_SEND_EMAIL.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(FAIL_TO_SEND_EMAIL.getMessage()))
+                .andDo(print());
+
+        verify(memberService).sendAuthCode(request.get("email"));
     }
 }
