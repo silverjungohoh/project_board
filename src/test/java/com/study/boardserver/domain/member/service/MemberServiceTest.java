@@ -2,12 +2,15 @@ package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.entity.Member;
+import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
+import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,6 +21,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
@@ -27,6 +32,9 @@ class MemberServiceTest {
 
     @Mock
     private MailService mailService;
+
+    @Mock
+    private MemberAuthCodeRepository memberAuthCodeRepository;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -122,8 +130,48 @@ class MemberServiceTest {
         given(memberRepository.findByEmail(anyString())).willReturn(Optional.empty());
         given(mailService.sendMail(anyString(), anyString())).willReturn(true);
 
+        ArgumentCaptor<MemberAuthCode> captor = ArgumentCaptor.forClass(MemberAuthCode.class);
+
         // when
         Map<String, String> result = memberService.sendAuthCode(email);
+
+        // then
+        assertNotNull(result.get("message"));
+        verify(memberAuthCodeRepository, times(1)).save(captor.capture());
+    }
+
+    @Test
+    @DisplayName("회원 이메일 인증 실패")
+    void confirmAuthCode_Fail() {
+        String code = "abc123";
+
+        // given
+        given(memberAuthCodeRepository.findById(anyString())).willReturn(Optional.empty());
+
+        // when
+        MemberException exception = assertThrows(MemberException.class,
+                ()-> memberService.confirmAuthCode(code));
+
+        // then
+        assertEquals(exception.getErrorCode(), MemberErrorCode.INVALID_EMAIL_AUTH_CODE);
+    }
+
+    @Test
+    @DisplayName("회원 이메일 인증 성공")
+    void confirmAuthCode_Success() {
+        String code = "abc123";
+
+        MemberAuthCode authCode = MemberAuthCode.builder()
+                .email("test@test.com")
+                .id(code)
+                .expiredAt(100L)
+                .build();
+
+        // given
+        given(memberAuthCodeRepository.findById(anyString())).willReturn(Optional.of(authCode));
+
+        // when
+        Map<String, String> result = memberService.confirmAuthCode(code);
 
         // then
         assertNotNull(result.get("message"));
