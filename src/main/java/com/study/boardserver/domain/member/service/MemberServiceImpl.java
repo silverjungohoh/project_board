@@ -2,7 +2,9 @@ package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.entity.Member;
+import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
+import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
     private final MailService mailService;
+    private final MemberAuthCodeRepository memberAuthCodeRepository;
 
     @Override
     public Map<String, String> checkDuplicatedEmail(String email) {
@@ -47,6 +50,14 @@ public class MemberServiceImpl implements MemberService {
 
         String authCode = UUID.randomUUID().toString().substring(0, 8);
         mailService.sendMail(email, authCode);
+
+        MemberAuthCode code = MemberAuthCode.builder()
+                .id(authCode)
+                .expiredAt(180L)
+                .email(email)
+                .build();
+
+        memberAuthCodeRepository.save(code);
 
         return getMessage("이메일 인증 코드를 전송하였습니다.");
     }
