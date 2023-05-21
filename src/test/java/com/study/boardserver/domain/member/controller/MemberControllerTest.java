@@ -187,4 +187,43 @@ class MemberControllerTest {
 
         verify(memberService).sendAuthCode(request.get("email"));
     }
+
+    @Test
+    @DisplayName("회원 이메일 인증 성공")
+    void confirmAuthCode_Success() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("code", "abc123");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "이메일 인증이 완료되었습니다.");
+
+        given(memberService.confirmAuthCode(anyString())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/email-authentication")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+
+    }
+
+    @Test
+    @DisplayName("회원 이메일 인증 실패")
+    void confirmAuthCode_Fail() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("code", "abc123");
+
+        given(memberService.confirmAuthCode(anyString())).willThrow(new MemberException(INVALID_EMAIL_AUTH_CODE));
+
+        mockMvc.perform(post("/api/members/email-authentication")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(INVALID_EMAIL_AUTH_CODE.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(INVALID_EMAIL_AUTH_CODE.getMessage()))
+                .andDo(print());
+    }
 }
