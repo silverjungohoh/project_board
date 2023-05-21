@@ -41,4 +41,10 @@ public class MemberController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/email-authentication")
+    @Operation(summary = "이메일 인증 코드 확인")
+    public ResponseEntity<Map<String, String>> confirmAuthCode(@RequestBody Map<String, String> code) {
+        Map<String, String> result = memberService.confirmAuthCode(code.get("code"));
+        return ResponseEntity.ok(result);
+    }
 }
