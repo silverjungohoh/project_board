@@ -2,6 +2,7 @@ package com.study.boardserver.domain.member.entity;
 
 import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.member.type.MemberStatus;
+import com.study.boardserver.global.entity.BaseTimeEntity;
 import lombok.*;
 
 import javax.persistence.*;
@@ -13,7 +14,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member {
+public class Member extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
