@@ -1,5 +1,7 @@
 package com.study.boardserver.domain.member.service;
 
+import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
+
 import java.util.Map;
 
 public interface MemberService {
@@ -22,5 +24,5 @@ public interface MemberService {
     /**
      * 이메일 인증 코드 확인
      */
-    Map<String, String> confirmAuthCode (String code);
+    Map<String, String> confirmAuthCode (ConfirmAuthCodeRequest request);
 }

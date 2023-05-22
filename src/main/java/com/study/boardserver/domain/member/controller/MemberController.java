@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.member.controller;
 
+import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,8 +44,8 @@ public class MemberController {
 
     @PostMapping("/email-authentication")
     @Operation(summary = "이메일 인증 코드 확인")
-    public ResponseEntity<Map<String, String>> confirmAuthCode(@RequestBody Map<String, String> code) {
-        Map<String, String> result = memberService.confirmAuthCode(code.get("code"));
+    public ResponseEntity<Map<String, String>> confirmAuthCode(@RequestBody ConfirmAuthCodeRequest request) {
+        Map<String, String> result = memberService.confirmAuthCode(request);
         return ResponseEntity.ok(result);
     }
 }

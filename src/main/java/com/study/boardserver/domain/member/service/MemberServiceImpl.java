@@ -1,6 +1,7 @@
 package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
+import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
@@ -63,9 +64,9 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public Map<String, String> confirmAuthCode(String code) {
+    public Map<String, String> confirmAuthCode(ConfirmAuthCodeRequest request) {
 
-        memberAuthCodeRepository.findById(code)
+        memberAuthCodeRepository.findByIdAndEmail(request.getCode(), request.getEmail())
                 .orElseThrow(()-> new MemberException(MemberErrorCode.INVALID_EMAIL_AUTH_CODE));
 
         return getMessage("이메일 인증이 완료되었습니다.");
