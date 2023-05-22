@@ -1,6 +1,7 @@
 package com.study.boardserver.domain.member.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.service.MemberService;
 import com.study.boardserver.global.error.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.study.boardserver.global.error.type.MemberErrorCode.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -191,13 +193,15 @@ class MemberControllerTest {
     @Test
     @DisplayName("회원 이메일 인증 성공")
     void confirmAuthCode_Success() throws Exception {
-        Map<String, String> request = new HashMap<>();
-        request.put("code", "abc123");
+        ConfirmAuthCodeRequest request = ConfirmAuthCodeRequest.builder()
+                .email("test@test.com")
+                .code("abc123")
+                .build();
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "이메일 인증이 완료되었습니다.");
 
-        given(memberService.confirmAuthCode(anyString())).willReturn(response);
+        given(memberService.confirmAuthCode(any())).willReturn(response);
 
         mockMvc.perform(post("/api/members/email-authentication")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -212,10 +216,12 @@ class MemberControllerTest {
     @Test
     @DisplayName("회원 이메일 인증 실패")
     void confirmAuthCode_Fail() throws Exception {
-        Map<String, String> request = new HashMap<>();
-        request.put("code", "abc123");
+        ConfirmAuthCodeRequest request = ConfirmAuthCodeRequest.builder()
+                .email("test@test.com")
+                .code("abc123")
+                .build();
 
-        given(memberService.confirmAuthCode(anyString())).willThrow(new MemberException(INVALID_EMAIL_AUTH_CODE));
+        given(memberService.confirmAuthCode(any())).willThrow(new MemberException(INVALID_EMAIL_AUTH_CODE));
 
         mockMvc.perform(post("/api/members/email-authentication")
                         .contentType(MediaType.APPLICATION_JSON)

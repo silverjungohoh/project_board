@@ -1,6 +1,7 @@
 package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
+import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
@@ -143,14 +144,17 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원 이메일 인증 실패")
     void confirmAuthCode_Fail() {
-        String code = "abc123";
+        ConfirmAuthCodeRequest request = ConfirmAuthCodeRequest.builder()
+                .email("test@test.com")
+                .code("abc123")
+                .build();
 
         // given
-        given(memberAuthCodeRepository.findById(anyString())).willReturn(Optional.empty());
+        given(memberAuthCodeRepository.findByIdAndEmail(anyString(), anyString())).willReturn(Optional.empty());
 
         // when
         MemberException exception = assertThrows(MemberException.class,
-                ()-> memberService.confirmAuthCode(code));
+                ()-> memberService.confirmAuthCode(request));
 
         // then
         assertEquals(exception.getErrorCode(), MemberErrorCode.INVALID_EMAIL_AUTH_CODE);
@@ -159,19 +163,22 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원 이메일 인증 성공")
     void confirmAuthCode_Success() {
-        String code = "abc123";
+        ConfirmAuthCodeRequest request = ConfirmAuthCodeRequest.builder()
+                .email("test@test.com")
+                .code("abc123")
+                .build();
 
         MemberAuthCode authCode = MemberAuthCode.builder()
-                .email("test@test.com")
-                .id(code)
+                .email(request.getEmail())
+                .id(request.getCode())
                 .expiredAt(100L)
                 .build();
 
         // given
-        given(memberAuthCodeRepository.findById(anyString())).willReturn(Optional.of(authCode));
+        given(memberAuthCodeRepository.findByIdAndEmail(anyString(), anyString())).willReturn(Optional.of(authCode));
 
         // when
-        Map<String, String> result = memberService.confirmAuthCode(code);
+        Map<String, String> result = memberService.confirmAuthCode(request);
 
         // then
         assertNotNull(result.get("message"));
