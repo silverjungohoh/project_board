@@ -1,16 +1,20 @@
 package com.study.boardserver.domain.member.controller;
 
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
 import com.study.boardserver.domain.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.Map;
 
 @RestController
@@ -47,5 +51,12 @@ public class MemberController {
     public ResponseEntity<Map<String, String>> confirmAuthCode(@RequestBody ConfirmAuthCodeRequest request) {
         Map<String, String> result = memberService.confirmAuthCode(request);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/sign-up")
+    @Operation(summary = "회원 가입")
+    public ResponseEntity<SignUpResponse> signUp (@RequestBody @Valid SignUpRequest request) {
+        SignUpResponse response = memberService.signUp(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
