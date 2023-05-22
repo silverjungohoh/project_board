@@ -2,6 +2,8 @@ package com.study.boardserver.domain.member.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
 import com.study.boardserver.domain.member.service.MemberService;
 import com.study.boardserver.global.error.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +15,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -230,6 +233,103 @@ class MemberControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(INVALID_EMAIL_AUTH_CODE.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(INVALID_EMAIL_AUTH_CODE.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원 가입 성공")
+    void signUp_Success() throws Exception {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("password1!")
+                .emailAuth(true)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        SignUpResponse response = SignUpResponse.builder()
+                .email(request.getEmail())
+                .nickname(request.getNickname())
+                .build();
+
+        given(memberService.signUp(any())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value(response.getEmail()))
+                .andExpect(jsonPath("$.nickname").value(response.getNickname()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원 가입 실패 - 이메일 인증 X")
+    void signUp_NoAuth_Fail() throws Exception {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("password1!")
+                .emailAuth(false)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberService.signUp(any())).willThrow(new MemberException(NOT_FINISH_EMAIL_AUTH));
+
+        mockMvc.perform(post("/api/members/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(NOT_FINISH_EMAIL_AUTH.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(NOT_FINISH_EMAIL_AUTH.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원 가입 실패 - 이메일 중복")
+    void signUp_DuplicatedEmail_Fail() throws Exception {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("password1!")
+                .emailAuth(false)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberService.signUp(any())).willThrow(new MemberException(DUPLICATED_EMAIL));
+
+        mockMvc.perform(post("/api/members/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(DUPLICATED_EMAIL.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(DUPLICATED_EMAIL.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원 가입 실패 - 닉네임 중복")
+    void signUp_DuplicatedNickname_Fail() throws Exception {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("password1!")
+                .emailAuth(false)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberService.signUp(any())).willThrow(new MemberException(DUPLICATED_NICKNAME));
+
+        mockMvc.perform(post("/api/members/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(DUPLICATED_NICKNAME.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(DUPLICATED_NICKNAME.getMessage()))
                 .andDo(print());
     }
 }
