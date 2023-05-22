@@ -46,4 +46,27 @@ public class MemberAuthCodeRepositoryTest {
         assertEquals(code, find.getId());
         assertEquals(expiredAt, find.getExpiredAt());
     }
+
+    @Test
+    @DisplayName("회원 인증 코드 조회")
+    void findAuthCode () {
+
+        String email = "test@test.com";
+        String code = "abc123";
+        Long expiredAt = 100L;
+
+        MemberAuthCode authCode = MemberAuthCode.builder()
+                .id(code)
+                .email(email)
+                .expiredAt(expiredAt)
+                .build();
+
+        memberAuthCodeRepository.save(authCode);
+
+        MemberAuthCode find = memberAuthCodeRepository.findByIdAndEmail(code, email).get();
+
+        assertEquals(email, find.getEmail());
+        assertEquals(code, find.getId());
+        assertEquals(expiredAt, find.getExpiredAt());
+    }
 }
