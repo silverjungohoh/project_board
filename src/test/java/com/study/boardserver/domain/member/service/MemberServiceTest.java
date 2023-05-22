@@ -2,6 +2,8 @@ package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
+import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
@@ -15,7 +17,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,6 +40,9 @@ class MemberServiceTest {
 
     @Mock
     private MemberAuthCodeRepository memberAuthCodeRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -182,5 +189,83 @@ class MemberServiceTest {
 
         // then
         assertNotNull(result.get("message"));
+    }
+
+    @Test
+    @DisplayName("회원 가입 실패 - 이메일 인증 X")
+    void signUp_NoAuth_Fail() {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("test1234!!")
+                .emailAuth(false)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        MemberException exception = assertThrows(MemberException.class,
+                ()-> memberService.signUp(request));
+
+        assertEquals(exception.getErrorCode(), MemberErrorCode.NOT_FINISH_EMAIL_AUTH);
+    }
+    @Test
+    @DisplayName("회원 가입 실패 - 이메일 중복")
+    void signUp_DuplicatedEmail_Fail() {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("test1234!!")
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberRepository.existsByEmail(anyString())).willReturn(true);
+
+        MemberException exception = assertThrows(MemberException.class,
+                ()-> memberService.signUp(request));
+
+        assertEquals(exception.getErrorCode(), MemberErrorCode.DUPLICATED_EMAIL);
+    }
+
+    @Test
+    @DisplayName("회원 가입 실패 - 닉네임 중복")
+    void signUp_DuplicatedNickname_Fail() {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("test1234!!")
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberRepository.existsByEmail(anyString())).willReturn(false);
+        given(memberRepository.existsByNickname(anyString())).willReturn(true);
+
+        MemberException exception = assertThrows(MemberException.class,
+                ()-> memberService.signUp(request));
+
+        assertEquals(exception.getErrorCode(), MemberErrorCode.DUPLICATED_NICKNAME);
+    }
+
+
+    @Test
+    @DisplayName("회원 가입 성공")
+    void signUp_Success() {
+        SignUpRequest request = SignUpRequest.builder()
+                .email("test@test.com")
+                .nickname("광어우럭")
+                .password("test1234!!")
+                .emailAuth(true)
+                .birth(LocalDate.of(2000, 1, 1))
+                .build();
+
+        given(memberRepository.existsByEmail(anyString())).willReturn(false);
+        given(memberRepository.existsByNickname(anyString())).willReturn(false);
+        given(passwordEncoder.encode(anyString())).willReturn("password1!");
+
+        ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+
+        SignUpResponse response = memberService.signUp(request);
+
+        assertEquals(response.getEmail(), request.getEmail());
+        assertEquals(response.getNickname(), request.getNickname());
+        verify(memberRepository, times(1)).save(captor.capture());
     }
 }
