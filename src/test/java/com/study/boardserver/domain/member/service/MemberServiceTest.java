@@ -52,7 +52,7 @@ class MemberServiceTest {
     void checkDuplicatedEmail_No() {
         String email = "test@test.com";
         // given
-        given(memberRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(memberRepository.existsByEmail(anyString())).willReturn(false);
         // when
         Map<String, String> result = memberService.checkDuplicatedEmail(email);
         // then
@@ -63,14 +63,8 @@ class MemberServiceTest {
     @DisplayName("이메일 중복 확인 - 중복 있음")
     void checkDuplicatedEmail_Yes() {
         String email = "test@test.com";
-        Member member = Member.builder()
-                .id(1L)
-                .email("test@test.com")
-                .nickname("nick")
-                .build();
-
         // given
-        given(memberRepository.findByEmail(anyString())).willReturn(Optional.of(member));
+        given(memberRepository.existsByEmail(anyString())).willReturn(true);
         // when
         MemberException exception = assertThrows(MemberException.class,
                 () -> memberService.checkDuplicatedEmail(email));
@@ -83,7 +77,7 @@ class MemberServiceTest {
     void checkDuplicatedNickname_No() {
         String nick = "nick";
         // given
-        given(memberRepository.findByNickname(anyString())).willReturn(Optional.empty());
+        given(memberRepository.existsByNickname(anyString())).willReturn(false);
         // when
         Map<String, String> result = memberService.checkDuplicatedNickname(nick);
         // then
@@ -94,14 +88,8 @@ class MemberServiceTest {
     @DisplayName("닉네임 중복 확인 - 중복 있음")
     void checkDuplicatedNickname_Yes() {
         String nick = "nick";
-        Member member = Member.builder()
-                .id(1L)
-                .email("test@test.com")
-                .nickname("nick")
-                .build();
-
         // given
-        given(memberRepository.findByNickname(anyString())).willReturn(Optional.of(member));
+        given(memberRepository.existsByNickname(anyString())).willReturn(true);
 
         // when
         MemberException exception = assertThrows(MemberException.class,
@@ -114,14 +102,8 @@ class MemberServiceTest {
     @DisplayName("이메일 인증 코드 발송 실패")
     void sendAuthCode_Fail() {
         String email = "test@test.com";
-        Member member = Member.builder()
-                .id(1L)
-                .email("test@test.com")
-                .nickname("nick")
-                .build();
-
         // given
-        given(memberRepository.findByEmail(anyString())).willReturn(Optional.of(member));
+        given(memberRepository.existsByEmail(anyString())).willReturn(true);
         // when
         MemberException exception = assertThrows(MemberException.class,
                 () -> memberService.sendAuthCode(email));
@@ -135,7 +117,7 @@ class MemberServiceTest {
         String email = "test@test.com";
 
         // given
-        given(memberRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(memberRepository.existsByEmail(anyString())).willReturn(false);
         given(mailService.sendMail(anyString(), anyString())).willReturn(true);
 
         ArgumentCaptor<MemberAuthCode> captor = ArgumentCaptor.forClass(MemberAuthCode.class);
