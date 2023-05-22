@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,8 +31,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Map<String, String> checkDuplicatedEmail(String email) {
-        Optional<Member> optional = memberRepository.findByEmail(email);
-        if(!optional.isEmpty()) {
+        if(memberRepository.existsByEmail(email)) {
             throw new MemberException(MemberErrorCode.DUPLICATED_EMAIL);
         }
         return getMessage("사용 가능한 이메일입니다.");
@@ -41,8 +39,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Map<String, String> checkDuplicatedNickname(String nickname) {
-        Optional<Member> optional = memberRepository.findByNickname(nickname);
-        if(!optional.isEmpty()) {
+        if(memberRepository.existsByNickname(nickname)) {
             throw new MemberException(MemberErrorCode.DUPLICATED_NICKNAME);
         }
         return getMessage("사용 가능한 닉네임입니다.");
@@ -50,8 +47,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Map<String, String> sendAuthCode(String email) {
-        Optional<Member> optional = memberRepository.findByEmail(email);
-        if (!optional.isEmpty()) {
+        if(memberRepository.existsByEmail(email)) {
             throw new MemberException(MemberErrorCode.DUPLICATED_EMAIL);
         }
 
