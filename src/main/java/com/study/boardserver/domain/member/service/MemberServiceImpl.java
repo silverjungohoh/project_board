@@ -10,6 +10,7 @@ import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
 import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.member.type.MemberStatus;
+import com.study.boardserver.domain.security.oauth2.type.ProviderType;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -93,9 +94,11 @@ public class MemberServiceImpl implements MemberService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
+                .name(request.getName())
                 .birth(request.getBirth())
                 .status(MemberStatus.ACTIVE)
                 .role(MemberRole.ROLE_USER)
+                .providerType(ProviderType.LOCAL)
                 .build();
 
         memberRepository.save(member);
