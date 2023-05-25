@@ -1,4 +1,4 @@
-package com.study.boardserver.global.config;
+package com.study.boardserver.domain.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
