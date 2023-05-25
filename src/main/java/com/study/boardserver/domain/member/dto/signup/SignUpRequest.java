@@ -32,6 +32,10 @@ public class SignUpRequest {
     @Size(min = 2, max = 10, message = "닉네임은 최소 2자, 최대 10자까지 가능합니다")
     private String nickname;
 
+    @NotBlank(message = "이름은 필수 입력 사항입니다.")
+    @Size(min = 2, max = 10, message = "이름은 최소 2자, 최대 10자까지 가능합니다.")
+    private String name;
+
     @JsonProperty("isEmailAuth")
     private boolean emailAuth;
 
