@@ -179,6 +179,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .emailAuth(false)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -195,6 +196,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .birth(LocalDate.of(2000, 1, 1))
                 .build();
@@ -213,6 +215,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .birth(LocalDate.of(2000, 1, 1))
                 .build();
@@ -233,6 +236,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .emailAuth(true)
                 .birth(LocalDate.of(2000, 1, 1))
