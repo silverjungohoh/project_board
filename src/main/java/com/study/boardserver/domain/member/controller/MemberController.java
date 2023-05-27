@@ -1,5 +1,7 @@
 package com.study.boardserver.domain.member.controller;
 
+import com.study.boardserver.domain.member.dto.login.LoginRequest;
+import com.study.boardserver.domain.member.dto.login.LoginResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
@@ -58,5 +60,12 @@ public class MemberController {
     public ResponseEntity<SignUpResponse> signUp (@RequestBody @Valid SignUpRequest request) {
         SignUpResponse response = memberService.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/auth/login")
+    @Operation(summary = "회원 로그인")
+    public ResponseEntity<LoginResponse> login (@RequestBody @Valid LoginRequest request) {
+        LoginResponse response = memberService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
