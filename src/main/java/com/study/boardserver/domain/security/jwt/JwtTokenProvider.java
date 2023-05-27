@@ -1,5 +1,7 @@
 package com.study.boardserver.domain.security.jwt;
 
+import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
+import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final UserDetailsService userDetailsService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -72,6 +75,7 @@ public class JwtTokenProvider {
      */
     public String issueRefreshToken(String email, String role) {
         String refreshToken = createToken(email, refreshTokenValid, role);
+        saveRefreshToken(email, refreshToken);
         return refreshToken;
     }
 
@@ -132,5 +136,19 @@ public class JwtTokenProvider {
         } catch (NullPointerException e) {
             return false;
         }
+    }
+
+    /**
+     * refresh token redis 저장
+     */
+    public void saveRefreshToken(String email, String token) {
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .id(email)
+                .refreshToken(token)
+                .expiration(refreshTokenValid)
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
     }
 }
