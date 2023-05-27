@@ -1,6 +1,8 @@
 package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
+import com.study.boardserver.domain.member.dto.login.LoginRequest;
+import com.study.boardserver.domain.member.dto.login.LoginResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
@@ -10,10 +12,16 @@ import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
 import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.member.type.MemberStatus;
+import com.study.boardserver.domain.security.CustomUserDetails;
+import com.study.boardserver.domain.security.jwt.JwtTokenProvider;
 import com.study.boardserver.domain.security.oauth2.type.ProviderType;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +37,8 @@ public class MemberServiceImpl implements MemberService {
     private final MailService mailService;
     private final MemberAuthCodeRepository memberAuthCodeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public Map<String, String> checkDuplicatedEmail(String email) {
@@ -106,6 +116,24 @@ public class MemberServiceImpl implements MemberService {
         return SignUpResponse.builder()
                 .email(member.getEmail())
                 .nickname(member.getNickname())
+                .build();
+    }
+
+    @Override
+    public LoginResponse login(LoginRequest request) {
+        UsernamePasswordAuthenticationToken authenticationToken
+                = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+
+        Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        String accessToken = jwtTokenProvider.issueAccessToken(userDetails.getUsername(), userDetails.getRole().name());
+        String refreshToken = jwtTokenProvider.issueRefreshToken(userDetails.getUsername(), userDetails.getRole().name());
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 
