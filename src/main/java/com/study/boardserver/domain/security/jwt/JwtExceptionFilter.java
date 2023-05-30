@@ -1,8 +1,8 @@
 package com.study.boardserver.domain.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.response.ErrorResponse;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,7 +25,7 @@ public class JwtExceptionFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             filterChain.doFilter(request, response);
-        } catch (JwtException e) {
+        } catch (MemberAuthException e) {
             setErrorResponse(response, e.getMessage());
         }
     }

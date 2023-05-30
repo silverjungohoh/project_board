@@ -2,6 +2,8 @@ package com.study.boardserver.domain.security.jwt;
 
 import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
 import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
+import com.study.boardserver.global.error.exception.MemberAuthException;
+import com.study.boardserver.global.error.type.MemberAuthErrorCode;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,21 +97,15 @@ public class JwtTokenProvider {
                     .setSigningKey(secretKey)
                     .parseClaimsJws(token)
                     .getBody();
-        } catch (SignatureException e) {
-            log.info("Invalid JWT signature: {}", e.getMessage());
-            throw new JwtException("Invalid JWT signature");
-        } catch (MalformedJwtException e) {
-            log.info("Invalid JWT token: {}", e.getMessage());
-            throw new JwtException("Invalid JWT token");
         } catch (ExpiredJwtException e) {
-            log.info("JWT token is expired: {}", e.getMessage());
-            throw new JwtException("JWT token is expired");
+            log.info("Expired JWT token: {}", e.getMessage());
+            throw new MemberAuthException(MemberAuthErrorCode.EXPIRED_ACCESS_TOKEN);
         } catch (UnsupportedJwtException e) {
-            log.info("JWT token is unsupported: {}", e.getMessage());
-            throw new JwtException("JWT token is unsupported");
-        } catch (IllegalArgumentException e) {
-            log.info("JWT claims string is empty: {}", e.getMessage());
-            throw new JwtException("JWT claims string is empty");
+            log.info("Unsupported JWT token: {}", e.getMessage());
+            throw new MemberAuthException(MemberAuthErrorCode.UNSUPPORTED_ACCESS_TOKEN);
+        } catch (SignatureException | MalformedJwtException | IllegalArgumentException e) {
+            log.info("Incorrect JWT token: {}", e.getMessage());
+            throw new MemberAuthException(MemberAuthErrorCode.INCORRECT_ACCESS_TOKEN);
         }
     }
 
