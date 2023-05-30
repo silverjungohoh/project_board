@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.security.jwt;
 
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessTokenRepository;
 import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
 import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
 import com.study.boardserver.global.error.exception.MemberAuthException;
@@ -149,6 +150,14 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * token 남은 유효 시간 계산
+     */
+    public long getRemainingTime(String token) {
+        Date expiration = extractClaims(token).getExpiration();
+        Date now = new Date();
+        return expiration.getTime() - now.getTime();
+    }
 
     /**
      * refresh token redis 저장

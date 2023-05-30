@@ -3,6 +3,7 @@ package com.study.boardserver.domain.member.service;
 import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.dto.login.LoginRequest;
 import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
@@ -16,6 +17,8 @@ import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.member.type.MemberStatus;
 import com.study.boardserver.domain.security.CustomUserDetails;
 import com.study.boardserver.domain.security.jwt.JwtTokenProvider;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessToken;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessTokenRepository;
 import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
 import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
 import com.study.boardserver.domain.security.oauth2.type.ProviderType;
@@ -46,6 +49,7 @@ public class MemberServiceImpl implements MemberService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final LogoutAccessTokenRepository logoutAccessTokenRepository;
 
     @Override
     public Map<String, String> checkDuplicatedEmail(String email) {
@@ -167,6 +171,31 @@ public class MemberServiceImpl implements MemberService {
         return ReissueTokenResponse.builder()
                 .accessToken(newAccessToken)
                 .build();
+    }
+
+    @Override
+    public Map<String, String> logout(LogoutRequest request) {
+        String accessToken = request.getAccessToken();
+
+        try {
+            jwtTokenProvider.validateAccessToken(accessToken);
+        } catch (MemberAuthException e) {
+            throw new MemberAuthException(MemberAuthErrorCode.INVALID_ACCESS_TOKEN);
+        }
+
+        Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+        String email = authentication.getName();
+
+        refreshTokenRepository.deleteById(email);
+
+        LogoutAccessToken logoutAccessToken = LogoutAccessToken.builder()
+                .id(accessToken)
+                .expiration(jwtTokenProvider.getRemainingTime(accessToken))
+                .build();
+
+        logoutAccessTokenRepository.save(logoutAccessToken);
+
+        return getMessage("로그아웃");
     }
 
     private static Map<String, String> getMessage(String message) {
