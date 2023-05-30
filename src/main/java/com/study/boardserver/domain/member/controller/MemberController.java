@@ -2,6 +2,7 @@ package com.study.boardserver.domain.member.controller;
 
 import com.study.boardserver.domain.member.dto.login.LoginRequest;
 import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
@@ -73,5 +74,12 @@ public class MemberController {
     public ResponseEntity<ReissueTokenResponse> reissue(@RequestBody ReissueTokenRequest request) {
         ReissueTokenResponse response = memberService.reissueToken(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/auth/logout")
+    @Operation(summary = "회원 로그아웃")
+    public ResponseEntity<Map<String, String>> logout(@RequestBody LogoutRequest request) {
+        Map<String, String> result = memberService.logout(request);
+        return ResponseEntity.ok(result);
     }
 }
