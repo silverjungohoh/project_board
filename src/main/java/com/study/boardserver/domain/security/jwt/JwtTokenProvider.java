@@ -29,6 +29,7 @@ public class JwtTokenProvider {
 
     private final UserDetailsService userDetailsService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final LogoutAccessTokenRepository logoutAccessTokenRepository;
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -158,6 +159,14 @@ public class JwtTokenProvider {
         Date now = new Date();
         return expiration.getTime() - now.getTime();
     }
+
+    /**
+     * access token 로그아웃 여부
+     */
+    public boolean isLogoutAccessToken(String token) {
+        return logoutAccessTokenRepository.existsById(token);
+    }
+
 
     /**
      * refresh token redis 저장
