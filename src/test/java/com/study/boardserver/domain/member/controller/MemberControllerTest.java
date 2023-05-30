@@ -3,6 +3,7 @@ package com.study.boardserver.domain.member.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.boardserver.domain.member.dto.login.LoginRequest;
 import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -447,6 +449,48 @@ class MemberControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(NOT_MATCH_REFRESH_TOKEN.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(NOT_MATCH_REFRESH_TOKEN.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("로그아웃 성공")
+    void logout_Success() throws Exception {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "로그아웃");
+
+        given(memberService.logout(any())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("로그아웃 실패")
+    void logout_Fail() throws Exception {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        given(memberService.logout(any())).willThrow(new MemberAuthException(INVALID_ACCESS_TOKEN));
+
+        mockMvc.perform(post("/api/members/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(INVALID_ACCESS_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(INVALID_ACCESS_TOKEN.getMessage()))
                 .andDo(print());
     }
 }
