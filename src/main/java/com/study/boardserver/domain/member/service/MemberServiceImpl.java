@@ -3,6 +3,8 @@ package com.study.boardserver.domain.member.service;
 import com.study.boardserver.domain.mail.service.MailService;
 import com.study.boardserver.domain.member.dto.login.LoginRequest;
 import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
@@ -14,8 +16,12 @@ import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.member.type.MemberStatus;
 import com.study.boardserver.domain.security.CustomUserDetails;
 import com.study.boardserver.domain.security.jwt.JwtTokenProvider;
+import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
+import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
 import com.study.boardserver.domain.security.oauth2.type.ProviderType;
+import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
+import com.study.boardserver.global.error.type.MemberAuthErrorCode;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,6 +45,7 @@ public class MemberServiceImpl implements MemberService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public Map<String, String> checkDuplicatedEmail(String email) {
@@ -137,6 +144,30 @@ public class MemberServiceImpl implements MemberService {
                 .build();
     }
 
+    @Override
+    public ReissueTokenResponse reissueToken(ReissueTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+
+        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+            throw new MemberAuthException(MemberAuthErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        String email = jwtTokenProvider.getUsername(refreshToken);
+        String role = jwtTokenProvider.getUserRole(refreshToken);
+
+        RefreshToken findRefreshToken  = refreshTokenRepository.findById(email)
+                .orElseThrow(() -> new MemberAuthException(MemberAuthErrorCode.NOT_EXIST_REFRESH_TOKEN));
+
+        if(!refreshToken.equals(findRefreshToken.getRefreshToken())) {
+            throw new MemberAuthException(MemberAuthErrorCode.NOT_MATCH_REFRESH_TOKEN);
+        }
+
+        String newAccessToken = jwtTokenProvider.issueAccessToken(email, role);
+
+        return ReissueTokenResponse.builder()
+                .accessToken(newAccessToken)
+                .build();
+    }
 
     private static Map<String, String> getMessage(String message) {
         Map<String, String> result = new HashMap<>();

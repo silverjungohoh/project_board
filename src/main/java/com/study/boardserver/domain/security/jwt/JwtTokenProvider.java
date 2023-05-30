@@ -120,6 +120,13 @@ public class JwtTokenProvider {
         return claims.get("email", String.class);
     }
 
+    public String getUserRole(String token) {
+
+        Claims claims = extractClaims(token);
+
+        return claims.get("role", String.class);
+    }
+
     public String resolveToken(HttpServletRequest request) {
         String headerAuth = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(BEARER_PREFIX)) {
@@ -134,6 +141,18 @@ public class JwtTokenProvider {
     public boolean validateAccessToken(String token) {
         return !extractClaims(token).getExpiration().before(new Date());
     }
+
+    /**
+     * refresh token 유효성 검증
+     */
+    public boolean validateRefreshToken(String token) {
+        try {
+            return !extractClaims(token).getExpiration().before(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     /**
      * refresh token redis 저장
