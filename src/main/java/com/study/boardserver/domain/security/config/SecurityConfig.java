@@ -64,7 +64,7 @@ public class SecurityConfig {
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .antMatchers("/api/members/sign-up/email", "/api/members/nickname"
                         , "/api/members/email-auth", "/api/members/email-authentication"
-                        , "/api/members/sign-up", "/api/members/auth/login").permitAll()
+                        , "/api/members/sign-up", "/api/members/auth/login", "/api/members/auth/token").permitAll()
                 .antMatchers("/api/admin/**").hasAuthority(ROLE_ADMIN.name())
                 .anyRequest().authenticated();
 
