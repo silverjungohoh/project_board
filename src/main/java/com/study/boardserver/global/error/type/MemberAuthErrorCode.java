@@ -16,7 +16,8 @@ public enum MemberAuthErrorCode {
     NOT_EXIST_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "refresh token이 존재하지 않습니다."),
     UNSUPPORTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "지원되지 않는 access token 입니다."),
     EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 access token 입니다."),
-    INCORRECT_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "잘못된 access token 입니다.");
+    INCORRECT_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "잘못된 access token 입니다."),
+    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "access token이 유효하지 않습니다.");
     private final HttpStatus status;
     private final String message;
 }
