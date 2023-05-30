@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -128,14 +129,10 @@ public class JwtTokenProvider {
     }
 
     /**
-     * token 유효성 검증
+     * access token 유효성 검증
      */
-    public boolean validateToken(String token) {
-        try {
-            return !extractClaims(token).getExpiration().before(new Date());
-        } catch (NullPointerException e) {
-            return false;
-        }
+    public boolean validateAccessToken(String token) {
+        return !extractClaims(token).getExpiration().before(new Date());
     }
 
     /**
