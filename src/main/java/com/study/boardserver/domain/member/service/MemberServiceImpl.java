@@ -177,9 +177,7 @@ public class MemberServiceImpl implements MemberService {
     public Map<String, String> logout(LogoutRequest request) {
         String accessToken = request.getAccessToken();
 
-        try {
-            jwtTokenProvider.validateAccessToken(accessToken);
-        } catch (MemberAuthException e) {
+        if(!jwtTokenProvider.validateToken(accessToken)) {
             throw new MemberAuthException(MemberAuthErrorCode.INVALID_ACCESS_TOKEN);
         }
 
