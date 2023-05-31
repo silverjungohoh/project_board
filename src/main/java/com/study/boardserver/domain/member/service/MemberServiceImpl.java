@@ -152,7 +152,7 @@ public class MemberServiceImpl implements MemberService {
     public ReissueTokenResponse reissueToken(ReissueTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new MemberAuthException(MemberAuthErrorCode.INVALID_REFRESH_TOKEN);
         }
 

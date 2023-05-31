@@ -141,9 +141,9 @@ public class JwtTokenProvider {
     }
 
     /**
-     * refresh token 유효성 검증
+     * token 유효성 검증 (refresh token 재발급 및 로그아웃에 사용)
      */
-    public boolean validateRefreshToken(String token) {
+    public boolean validateToken(String token) {
         try {
             return !extractClaims(token).getExpiration().before(new Date());
         } catch (Exception e) {

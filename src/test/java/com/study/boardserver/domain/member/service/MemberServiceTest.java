@@ -275,7 +275,7 @@ class MemberServiceTest {
                 .refreshToken("refresh-token")
                 .build();
 
-        given(jwtTokenProvider.validateRefreshToken(anyString())).willReturn(false);
+        given(jwtTokenProvider.validateToken(anyString())).willReturn(false);
 
         MemberAuthException exception = assertThrows(MemberAuthException.class,
                 ()-> memberService.reissueToken(request));
@@ -293,7 +293,7 @@ class MemberServiceTest {
         String email = "test@test.com";
         String role = "ROLE_USER";
 
-        given(jwtTokenProvider.validateRefreshToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
         given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
         given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
         given(refreshTokenRepository.findById(anyString())).willReturn(Optional.empty());
@@ -319,7 +319,7 @@ class MemberServiceTest {
                 .refreshToken("refresh-token2")
                 .build();
 
-        given(jwtTokenProvider.validateRefreshToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
         given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
         given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
         given(refreshTokenRepository.findById(anyString())).willReturn(Optional.of(refreshToken));
@@ -347,7 +347,7 @@ class MemberServiceTest {
 
         String accessToken = "access-token";
 
-        given(jwtTokenProvider.validateRefreshToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
         given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
         given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
         given(refreshTokenRepository.findById(anyString())).willReturn(Optional.of(refreshToken));
