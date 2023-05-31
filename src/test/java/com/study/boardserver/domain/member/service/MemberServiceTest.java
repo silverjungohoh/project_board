@@ -1,6 +1,7 @@
 package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
 import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
@@ -10,7 +11,11 @@ import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
+import com.study.boardserver.domain.member.type.MemberRole;
+import com.study.boardserver.domain.security.CustomUserDetails;
 import com.study.boardserver.domain.security.jwt.JwtTokenProvider;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessToken;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessTokenRepository;
 import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
 import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
 import com.study.boardserver.global.error.exception.MemberAuthException;
@@ -24,6 +29,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -56,6 +63,9 @@ class MemberServiceTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private LogoutAccessTokenRepository logoutAccessTokenRepository;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -358,4 +368,45 @@ class MemberServiceTest {
         assertEquals(response.getAccessToken(), accessToken);
     }
 
+    @Test
+    @DisplayName("로그아웃 실패")
+    void logout_Fail() {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        MemberAuthException exception = assertThrows(MemberAuthException.class,
+                () -> memberService.logout(request));
+
+        assertEquals(exception.getErrorCode(), MemberAuthErrorCode.INVALID_ACCESS_TOKEN);
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공")
+    void logout_Success() {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        Member member = Member.builder()
+                .email("test@test.com")
+                .nickname("닉네임")
+                .password("password123!")
+                .role(MemberRole.ROLE_USER)
+                .build();
+
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+
+        given(jwtTokenProvider.validateToken(anyString())).willReturn(true);
+        given(jwtTokenProvider.getAuthentication(anyString())).willReturn(authentication);
+        given(jwtTokenProvider.getRemainingTime(anyString())).willReturn(10000L);
+
+        ArgumentCaptor<LogoutAccessToken> captor = ArgumentCaptor.forClass(LogoutAccessToken.class);
+
+        Map<String, String> result = memberService.logout(request);
+
+        assertNotNull(result.get("message"));
+        verify(logoutAccessTokenRepository, times(1)).save(captor.capture());
+    }
 }
