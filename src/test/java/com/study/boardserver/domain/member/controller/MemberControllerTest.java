@@ -1,10 +1,16 @@
 package com.study.boardserver.domain.member.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.study.boardserver.domain.member.dto.login.LoginRequest;
+import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
 import com.study.boardserver.domain.member.service.MemberService;
+import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +27,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.study.boardserver.global.error.type.MemberAuthErrorCode.*;
 import static com.study.boardserver.global.error.type.MemberErrorCode.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -244,6 +252,7 @@ class MemberControllerTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("password1!")
                 .emailAuth(true)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -272,6 +281,7 @@ class MemberControllerTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("password1!")
                 .emailAuth(false)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -295,6 +305,7 @@ class MemberControllerTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("password1!")
                 .emailAuth(false)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -318,6 +329,7 @@ class MemberControllerTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("password1!")
                 .emailAuth(false)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -332,6 +344,153 @@ class MemberControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(DUPLICATED_NICKNAME.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(DUPLICATED_NICKNAME.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원 로그인 성공")
+    void login_Success() throws Exception {
+
+        LoginRequest request = LoginRequest.builder()
+                .email("test@test.com")
+                .password("password123!")
+                .build();
+
+        LoginResponse response = LoginResponse.builder()
+                .refreshToken("refresh-token")
+                .accessToken("access-token")
+                .build();
+
+        given(memberService.login(any())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value(response.getAccessToken()))
+                .andExpect(jsonPath("$.refreshToken").value(response.getRefreshToken()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("access token 재발급 성공")
+    void reissueToken_Success() throws Exception {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        ReissueTokenResponse response = ReissueTokenResponse.builder()
+                .accessToken("access-token")
+                .build();
+
+        given(memberService.reissueToken(any())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/auth/token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value(response.getAccessToken()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 토큰 유효 X")
+    void reissueToken_Fail_Invalid() throws Exception {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        given(memberService.reissueToken(any())).willThrow(new MemberAuthException(INVALID_REFRESH_TOKEN));
+
+        mockMvc.perform(post("/api/members/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(INVALID_REFRESH_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(INVALID_REFRESH_TOKEN.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 토큰 존재 X")
+    void reissueToken_Fail_NotExist() throws Exception {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        given(memberService.reissueToken(any())).willThrow(new MemberAuthException(NOT_EXIST_REFRESH_TOKEN));
+
+        mockMvc.perform(post("/api/members/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(NOT_EXIST_REFRESH_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(NOT_EXIST_REFRESH_TOKEN.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 일치 X")
+    void reissueToken_Fail_NotMatch() throws Exception {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        given(memberService.reissueToken(any())).willThrow(new MemberAuthException(NOT_MATCH_REFRESH_TOKEN));
+
+        mockMvc.perform(post("/api/members/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(NOT_MATCH_REFRESH_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(NOT_MATCH_REFRESH_TOKEN.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("로그아웃 성공")
+    void logout_Success() throws Exception {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "로그아웃");
+
+        given(memberService.logout(any())).willReturn(response);
+
+        mockMvc.perform(post("/api/members/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("로그아웃 실패")
+    void logout_Fail() throws Exception {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        given(memberService.logout(any())).willThrow(new MemberAuthException(INVALID_ACCESS_TOKEN));
+
+        mockMvc.perform(post("/api/members/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(INVALID_ACCESS_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(INVALID_ACCESS_TOKEN.getMessage()))
                 .andDo(print());
     }
 }

@@ -1,5 +1,10 @@
 package com.study.boardserver.domain.member.controller;
 
+import com.study.boardserver.domain.member.dto.login.LoginRequest;
+import com.study.boardserver.domain.member.dto.login.LoginResponse;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
@@ -9,10 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Map;
@@ -58,5 +60,26 @@ public class MemberController {
     public ResponseEntity<SignUpResponse> signUp (@RequestBody @Valid SignUpRequest request) {
         SignUpResponse response = memberService.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/auth/login")
+    @Operation(summary = "회원 로그인")
+    public ResponseEntity<LoginResponse> login (@RequestBody @Valid LoginRequest request) {
+        LoginResponse response = memberService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/auth/token")
+    @Operation(summary = "유효 기간이 지난 access token 재발급")
+    public ResponseEntity<ReissueTokenResponse> reissue(@RequestBody ReissueTokenRequest request) {
+        ReissueTokenResponse response = memberService.reissueToken(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/auth/logout")
+    @Operation(summary = "회원 로그아웃")
+    public ResponseEntity<Map<String, String>> logout(@RequestBody LogoutRequest request) {
+        Map<String, String> result = memberService.logout(request);
+        return ResponseEntity.ok(result);
     }
 }

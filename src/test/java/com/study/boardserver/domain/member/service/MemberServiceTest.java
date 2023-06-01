@@ -1,6 +1,9 @@
 package com.study.boardserver.domain.member.service;
 
 import com.study.boardserver.domain.mail.service.MailService;
+import com.study.boardserver.domain.member.dto.logout.LogoutRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenRequest;
+import com.study.boardserver.domain.member.dto.reissue.ReissueTokenResponse;
 import com.study.boardserver.domain.member.dto.signup.ConfirmAuthCodeRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpRequest;
 import com.study.boardserver.domain.member.dto.signup.SignUpResponse;
@@ -8,7 +11,16 @@ import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.entity.MemberAuthCode;
 import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.domain.member.repository.redis.MemberAuthCodeRepository;
+import com.study.boardserver.domain.member.type.MemberRole;
+import com.study.boardserver.domain.security.CustomUserDetails;
+import com.study.boardserver.domain.security.jwt.JwtTokenProvider;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessToken;
+import com.study.boardserver.domain.security.jwt.redis.LogoutAccessTokenRepository;
+import com.study.boardserver.domain.security.jwt.redis.RefreshToken;
+import com.study.boardserver.domain.security.jwt.redis.RefreshTokenRepository;
+import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
+import com.study.boardserver.global.error.type.MemberAuthErrorCode;
 import com.study.boardserver.global.error.type.MemberErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +29,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -43,6 +57,15 @@ class MemberServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private LogoutAccessTokenRepository logoutAccessTokenRepository;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -179,6 +202,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .emailAuth(false)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -195,6 +219,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .birth(LocalDate.of(2000, 1, 1))
                 .build();
@@ -213,6 +238,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .birth(LocalDate.of(2000, 1, 1))
                 .build();
@@ -233,6 +259,7 @@ class MemberServiceTest {
         SignUpRequest request = SignUpRequest.builder()
                 .email("test@test.com")
                 .nickname("광어우럭")
+                .name("이름")
                 .password("test1234!!")
                 .emailAuth(true)
                 .birth(LocalDate.of(2000, 1, 1))
@@ -249,5 +276,137 @@ class MemberServiceTest {
         assertEquals(response.getEmail(), request.getEmail());
         assertEquals(response.getNickname(), request.getNickname());
         verify(memberRepository, times(1)).save(captor.capture());
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 토큰 유효 X")
+    void reissueToken_Fail_Invalid() {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        given(jwtTokenProvider.validateToken(anyString())).willReturn(false);
+
+        MemberAuthException exception = assertThrows(MemberAuthException.class,
+                ()-> memberService.reissueToken(request));
+
+        assertEquals(exception.getErrorCode(), MemberAuthErrorCode.INVALID_REFRESH_TOKEN);
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 토큰 존재 X")
+    void reissueToken_Fail_NotExist() {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        String email = "test@test.com";
+        String role = "ROLE_USER";
+
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
+        given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
+        given(refreshTokenRepository.findById(anyString())).willReturn(Optional.empty());
+
+        MemberAuthException exception = assertThrows(MemberAuthException.class,
+                ()-> memberService.reissueToken(request));
+
+        assertEquals(exception.getErrorCode(), MemberAuthErrorCode.NOT_EXIST_REFRESH_TOKEN);
+    }
+
+    @Test
+    @DisplayName("access token 재발급 실패 - 일치 X")
+    void reissueToken_Fail_NotMatch() {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token1")
+                .build();
+
+        String email = "test@test.com";
+        String role = "ROLE_USER";
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .id(email)
+                .refreshToken("refresh-token2")
+                .build();
+
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
+        given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
+        given(refreshTokenRepository.findById(anyString())).willReturn(Optional.of(refreshToken));
+
+        MemberAuthException exception = assertThrows(MemberAuthException.class,
+                () -> memberService.reissueToken(request));
+
+        assertEquals(exception.getErrorCode(), MemberAuthErrorCode.NOT_MATCH_REFRESH_TOKEN);
+    }
+
+    @Test
+    @DisplayName("access token 재발급 성공")
+    void reissueToken_Success() {
+        ReissueTokenRequest request = ReissueTokenRequest.builder()
+                .refreshToken("refresh-token")
+                .build();
+
+        String email = "test@test.com";
+        String role = "ROLE_USER";
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .id(email)
+                .refreshToken("refresh-token")
+                .build();
+
+        String accessToken = "access-token";
+
+        given(jwtTokenProvider.validateToken(request.getRefreshToken())).willReturn(true);
+        given(jwtTokenProvider.getUsername(anyString())).willReturn(email);
+        given(jwtTokenProvider.getUserRole(anyString())).willReturn(role);
+        given(refreshTokenRepository.findById(anyString())).willReturn(Optional.of(refreshToken));
+        given(jwtTokenProvider.issueAccessToken(anyString(), anyString())).willReturn(accessToken);
+
+        ReissueTokenResponse response = memberService.reissueToken(request);
+
+        assertEquals(response.getAccessToken(), accessToken);
+    }
+
+    @Test
+    @DisplayName("로그아웃 실패")
+    void logout_Fail() {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        MemberAuthException exception = assertThrows(MemberAuthException.class,
+                () -> memberService.logout(request));
+
+        assertEquals(exception.getErrorCode(), MemberAuthErrorCode.INVALID_ACCESS_TOKEN);
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공")
+    void logout_Success() {
+        LogoutRequest request = LogoutRequest.builder()
+                .accessToken("access-token")
+                .build();
+
+        Member member = Member.builder()
+                .email("test@test.com")
+                .nickname("닉네임")
+                .password("password123!")
+                .role(MemberRole.ROLE_USER)
+                .build();
+
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+
+        given(jwtTokenProvider.validateToken(anyString())).willReturn(true);
+        given(jwtTokenProvider.getAuthentication(anyString())).willReturn(authentication);
+        given(jwtTokenProvider.getRemainingTime(anyString())).willReturn(10000L);
+
+        ArgumentCaptor<LogoutAccessToken> captor = ArgumentCaptor.forClass(LogoutAccessToken.class);
+
+        Map<String, String> result = memberService.logout(request);
+
+        assertNotNull(result.get("message"));
+        verify(logoutAccessTokenRepository, times(1)).save(captor.capture());
     }
 }

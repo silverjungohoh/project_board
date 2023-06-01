@@ -1,5 +1,6 @@
 package com.study.boardserver.global.error.handler;
 
+import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
@@ -33,5 +34,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(MemberAuthException.class)
+    public ResponseEntity<ErrorResponse> handleMemberAuthException(MemberAuthException e) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .status(e.getErrorCode().getStatus().value())
+                .message(e.getMessage())
+                .build();
+
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(response);
     }
 }
