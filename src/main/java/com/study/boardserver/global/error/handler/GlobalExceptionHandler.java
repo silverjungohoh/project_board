@@ -1,5 +1,6 @@
 package com.study.boardserver.global.error.handler;
 
+import com.study.boardserver.global.error.exception.ImageException;
 import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
 import com.study.boardserver.global.error.response.ErrorResponse;
@@ -38,6 +39,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MemberAuthException.class)
     public ResponseEntity<ErrorResponse> handleMemberAuthException(MemberAuthException e) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .status(e.getErrorCode().getStatus().value())
+                .message(e.getMessage())
+                .build();
+
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(response);
+    }
+
+    @ExceptionHandler(ImageException.class)
+    public ResponseEntity<ErrorResponse> handleImageException(ImageException e) {
 
         ErrorResponse response = ErrorResponse.builder()
                 .status(e.getErrorCode().getStatus().value())
