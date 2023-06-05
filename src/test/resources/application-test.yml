@@ -33,3 +33,19 @@ spring:
     valid:
       accessToken: 600000
       refreshToken: 600000
+
+cloud:
+  aws:
+    credentials:
+      access-key: test
+      secret-key: test
+    s3:
+      bucket: test-bucket
+    region:
+      static: ap-northeast-2
+      auto: false
+    stack:
+      auto: false
+
+test-path: http://127.0.0.1:8001
+test-port: 8001
