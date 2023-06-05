@@ -9,8 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Objects;
+
+import static com.study.boardserver.global.error.type.ImageErrorCode.EXCEEDED_IMAGE_SIZE_LIMIT;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -57,5 +60,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(e.getErrorCode().getStatus()).body(response);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException() {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .status(EXCEEDED_IMAGE_SIZE_LIMIT.getStatus().value())
+                .message(EXCEEDED_IMAGE_SIZE_LIMIT.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
     }
 }
