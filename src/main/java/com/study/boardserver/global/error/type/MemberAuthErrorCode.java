@@ -17,7 +17,9 @@ public enum MemberAuthErrorCode {
     UNSUPPORTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "지원되지 않는 access token 입니다."),
     EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 access token 입니다."),
     INCORRECT_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "잘못된 access token 입니다."),
-    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "access token이 유효하지 않습니다.");
+    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "access token이 유효하지 않습니다."),
+    NOT_MATCH_PROVIDER_TYPE(HttpStatus.BAD_REQUEST, "가입된 계정의 소셜 타입과 일치하지 않습니다.");
+
     private final HttpStatus status;
     private final String message;
 }
