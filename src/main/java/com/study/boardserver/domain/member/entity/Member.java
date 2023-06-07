@@ -41,4 +41,8 @@ public class Member extends BaseTimeEntity {
     private ProviderType providerType;
 
     private String imgUrl;
+
+    public void setImgUrl(String imgUrl) {
+        this.imgUrl = imgUrl;
+    }
 }
