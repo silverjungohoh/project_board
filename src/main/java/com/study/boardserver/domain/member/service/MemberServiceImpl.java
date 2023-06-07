@@ -115,7 +115,6 @@ public class MemberServiceImpl implements MemberService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
-                .name(request.getName())
                 .birth(request.getBirth())
                 .status(MemberStatus.ACTIVE)
                 .role(MemberRole.ROLE_USER)
