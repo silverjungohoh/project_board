@@ -12,7 +12,7 @@ public class KakaoOAuth2UserInfo implements OAuth2UserInfo {
     public KakaoOAuth2UserInfo(Map<String, Object> attributes) {
         this.attributes = attributes;
         this.attributesAccount = (Map<String, Object>) attributes.get("kakao_account");
-        this.attributesProfile = (Map<String, Object>) attributes.get("profile");
+        this.attributesProfile = (Map<String, Object>) attributesAccount.get("profile");
     }
 
     @Override
@@ -42,6 +42,6 @@ public class KakaoOAuth2UserInfo implements OAuth2UserInfo {
 
     @Override
     public String getImageUrl() {
-        return attributesProfile.get("thumbnail_image_url").toString();
+        return attributesProfile.get("profile_image_url").toString();
     }
 }
