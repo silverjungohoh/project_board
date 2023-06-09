@@ -26,8 +26,6 @@ public class Member extends BaseTimeEntity {
 
     private String password;
 
-    private String name;
-
     @Column(unique = true)
     private String nickname;
 
@@ -43,4 +41,8 @@ public class Member extends BaseTimeEntity {
     private ProviderType providerType;
 
     private String imgUrl;
+
+    public void setImgUrl(String imgUrl) {
+        this.imgUrl = imgUrl;
+    }
 }

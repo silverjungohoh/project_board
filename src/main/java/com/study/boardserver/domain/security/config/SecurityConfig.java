@@ -2,8 +2,12 @@ package com.study.boardserver.domain.security.config;
 
 import com.study.boardserver.domain.security.handler.CustomAccessDeniedHandler;
 import com.study.boardserver.domain.security.handler.CustomAuthenticationEntryPoint;
+import com.study.boardserver.domain.security.handler.OAuth2AuthenticationFailureHandler;
+import com.study.boardserver.domain.security.handler.OAuth2AuthenticationSuccessHandler;
 import com.study.boardserver.domain.security.jwt.JwtAuthenticationFilter;
 import com.study.boardserver.domain.security.jwt.JwtExceptionFilter;
+import com.study.boardserver.domain.security.oauth2.repository.CookieAuthorizationRequestRepository;
+import com.study.boardserver.domain.security.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +34,10 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CustomOAuth2UserService oAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler authenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler authenticationFailureHandler;
+    private final CookieAuthorizationRequestRepository authorizationRequestRepository;
 
 
     @Bean
@@ -67,6 +75,18 @@ public class SecurityConfig {
                         , "/api/members/sign-up", "/api/members/auth/login", "/api/members/auth/token").permitAll()
                 .antMatchers("/api/admin/**").hasAuthority(ROLE_ADMIN.name())
                 .anyRequest().authenticated();
+
+        http.oauth2Login()
+                .successHandler(authenticationSuccessHandler)
+                .failureHandler(authenticationFailureHandler)
+
+                .authorizationEndpoint()
+                .baseUri("/login/oauth2/authorization")
+                .authorizationRequestRepository(authorizationRequestRepository)
+
+                .and()
+                .userInfoEndpoint()
+                .userService(oAuth2UserService);
 
         http.exceptionHandling()
                 .authenticationEntryPoint(customAuthenticationEntryPoint)
