@@ -10,14 +10,14 @@ import com.study.boardserver.domain.board.repository.PostImageRepository;
 import com.study.boardserver.domain.board.repository.PostRepository;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.global.error.exception.MemberAuthException;
+import com.study.boardserver.global.error.exception.BoardException;
+import com.study.boardserver.global.error.type.BoardErrorCode;
 import com.study.boardserver.global.error.type.MemberAuthErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -75,5 +75,36 @@ public class PostServiceImpl implements PostService {
                 .imageUrls(imgResponse)
                 .createdAt(post.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    public Map<String, String> deletePost(Member member, Long postId) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        if(!Objects.equals(post.getMember().getEmail(), member.getEmail())) {
+            throw new BoardException(BoardErrorCode.CANNOT_DELETE_POST);
+        }
+
+        List<PostImage> postImages = postImageRepository.findAllByPost(post);
+        if(!postImages.isEmpty()) {
+            removeImages(postImages);
+        }
+
+        postRepository.delete(post);
+        return getMessage("게시물이 삭제되었습니다.");
+    }
+
+    private void removeImages (List<PostImage> images) {
+        for(PostImage image : images) {
+            awsS3Service.deleteFile(image.getImgUrl(), DIR);
+        }
+    }
+
+    private static Map<String, String> getMessage(String message) {
+        Map<String, String> result = new HashMap<>();
+        result.put("message", message);
+        return result;
     }
 }
