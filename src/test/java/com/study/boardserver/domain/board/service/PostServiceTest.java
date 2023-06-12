@@ -8,7 +8,9 @@ import com.study.boardserver.domain.board.entity.PostImage;
 import com.study.boardserver.domain.board.repository.PostImageRepository;
 import com.study.boardserver.domain.board.repository.PostRepository;
 import com.study.boardserver.domain.member.entity.Member;
+import com.study.boardserver.global.error.exception.BoardException;
 import com.study.boardserver.global.error.exception.MemberAuthException;
+import com.study.boardserver.global.error.type.BoardErrorCode;
 import com.study.boardserver.global.error.type.MemberAuthErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,11 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -99,5 +101,79 @@ class PostServiceTest {
         assertEquals(response.getNickname(), member.getNickname());
         verify(postRepository, times(1)).save(postCaptor.capture());
         verify(postImageRepository, times(2)).save(imageCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("회원 게시물 삭제 실패 - 작성자 아님")
+    void deletePost_Fail_NotMatch() {
+
+        Member member1 = Member.builder()
+                .id(1L)
+                .email("test123@test.com")
+                .build();
+
+        Member member2 = Member.builder()
+                .id(2L)
+                .email("test234@test.com")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .member(member1)
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> postService.deletePost(member2, 1L));
+
+        assertEquals(BoardErrorCode.CANNOT_DELETE_POST, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("회원 게시물 삭제 실패 - 게시물 없음")
+    void deletePost_Fail_NoPost() {
+
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> postService.deletePost(member, 1L));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("회원 게시물 삭제 성공")
+    void deletePost_Success() {
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .build();
+
+        PostImage postImage = PostImage.builder()
+                .id(1L)
+                .imgUrl("https://test~")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .member(member)
+                .postImages(List.of(postImage))
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+
+        Map<String, String> result = postService.deletePost(member, 1L);
+        assertNotNull(result.get("message"));
+
     }
 }
