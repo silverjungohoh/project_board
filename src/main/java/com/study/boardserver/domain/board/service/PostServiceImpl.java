@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -53,6 +54,7 @@ public class PostServiceImpl implements PostService {
                 PostImage image = PostImage.builder()
                         .imgUrl(url)
                         .post(post)
+                        .createdAt(LocalDateTime.now())
                         .build();
 
                 postImageRepository.save(image);
