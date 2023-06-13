@@ -55,12 +55,11 @@ class PostControllerTest {
     @MockBean
     private PostService postService;
 
-    private Member member;
     private CustomUserDetails userDetails;
 
     @BeforeEach
     void setUp() {
-        member = Member.builder()
+        Member member = Member.builder()
                 .id(1L)
                 .email("test123@test.com")
                 .nickname("nickname")
@@ -203,7 +202,7 @@ class PostControllerTest {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .imageUrls(List.of(imgResponse1, imgResponse2))
-                .nickname(member.getNickname())
+                .nickname(userDetails.getMember().getNickname())
                 .createdAt(date)
                 .build();
 
@@ -328,5 +327,53 @@ class PostControllerTest {
                 .andDo(print());
     }
 
+    @Test
+    @DisplayName("게시물 삭제 성공")
+    void deletePost_Success() throws Exception {
 
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "게시물이 삭제되었습니다.");
+
+        given(postService.deletePost(any(), anyLong())).willReturn(response);
+
+        mockMvc.perform(delete("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 삭제 실패 - 삭제 권한 없음")
+    void deletePost_Fail_NotMatch() throws Exception {
+
+        given(postService.deletePost(any(), anyLong())).willThrow(new BoardException(CANNOT_DELETE_POST));
+
+        mockMvc.perform(delete("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(CANNOT_DELETE_POST.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(CANNOT_DELETE_POST.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 삭제 실패 - 게시물 없음")
+    void deletePost_Fail_NoPost() throws Exception {
+
+        given(postService.deletePost(any(), anyLong())).willThrow(new BoardException(POST_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(POST_NOT_FOUND.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(POST_NOT_FOUND.getMessage()))
+                .andDo(print());
+    }
 }
