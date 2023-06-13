@@ -1,6 +1,7 @@
 package com.study.boardserver.domain.board.service;
 
 import com.study.boardserver.domain.awss3.service.AwsS3Service;
+import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
 import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
 import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
 import com.study.boardserver.domain.board.entity.Post;
@@ -175,5 +176,87 @@ class PostServiceTest {
         Map<String, String> result = postService.deletePost(member, 1L);
         assertNotNull(result.get("message"));
 
+    }
+
+    @Test
+    @DisplayName("이미지 업로드 실패 - 게시물 없음")
+    void uploadPostImage_Fail_NoPost() {
+
+        String contentType = "image/png";
+        MockMultipartFile file = new MockMultipartFile("test", "test_2023.png", contentType, "test".getBytes());
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> postService.uploadPostImage(1L, file));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("이미지 업로드 성공")
+    void uploadPostImage_Success() {
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        String contentType = "image/png";
+        MockMultipartFile file = new MockMultipartFile("test", "test_2023.png", contentType, "test".getBytes());
+
+        String imgUrl = "https://image-bucket.s3.abc1.jpg";
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(awsS3Service.uploadFile(any(), anyString())).willReturn(imgUrl);
+
+        ArgumentCaptor<PostImage> imageCaptor = ArgumentCaptor.forClass(PostImage.class);
+
+        PostImageUrlResponse response = postService.uploadPostImage(1L, file);
+
+        assertEquals(response.getImageUrl(), imgUrl);
+        verify(postImageRepository, times(1)).save(imageCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("이미지 삭제 실패 - 게시물 없음")
+    void deletePostImage_Fail_NoPost() {
+
+        given(postRepository.existsById(anyLong())).willReturn(false);
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> postService.deletePostImage(1L, 1L));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("이미지 삭제 실패 - 이미지 없음")
+    void deletePostImage_Fail_NoPostImage() {
+
+        given(postRepository.existsById(anyLong())).willReturn(true);
+        given(postImageRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> postService.deletePostImage(1L, 1L));
+
+        assertEquals(BoardErrorCode.POST_IMAGE_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("이미지 삭제 성공")
+    void deletePostImage_Success() {
+
+        PostImage postImage = PostImage.builder()
+                .id(1L)
+                .imgUrl("https://test~")
+                .build();
+
+        given(postRepository.existsById(anyLong())).willReturn(true);
+        given(postImageRepository.findById(anyLong())).willReturn(Optional.of(postImage));
+
+        Map<String, String> result = postService.deletePostImage(1L, 1L);
+        assertNotNull(result.get("message"));
     }
 }
