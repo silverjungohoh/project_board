@@ -1,9 +1,7 @@
 package com.study.boardserver.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
-import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
-import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
+import com.study.boardserver.domain.board.dto.post.*;
 import com.study.boardserver.domain.board.service.PostService;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.repository.MemberRepository;
@@ -30,14 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.study.boardserver.global.error.type.BoardErrorCode.POST_IMAGE_NOT_FOUND;
-import static com.study.boardserver.global.error.type.BoardErrorCode.POST_NOT_FOUND;
+import static com.study.boardserver.global.error.type.BoardErrorCode.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -234,4 +230,103 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(response.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
                 .andDo(print());
     }
+
+    @Test
+    @DisplayName("게시물 수정 성공")
+    void updatePost_Success() throws Exception {
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        LocalDateTime createdAt = LocalDateTime.of(2023, 6, 12, 23, 59, 59);
+        LocalDateTime updatedAt = LocalDateTime.of(2023, 6, 15, 23, 59, 59);
+
+        String imgUrl1 = "https://image-bucket.s3.abc1.jpg";
+        String imgUrl2 = "https://image-bucket.s3.abc2.jpg";
+
+        PostImageUrlResponse imgResponse1 = PostImageUrlResponse.builder()
+                .imageId(1L)
+                .imageUrl(imgUrl1)
+                .build();
+
+        PostImageUrlResponse imgResponse2 = PostImageUrlResponse.builder()
+                .imageId(2L)
+                .imageUrl(imgUrl2)
+                .build();
+
+        PostUpdateResponse response = PostUpdateResponse.builder()
+                .postId(1L)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .imageUrls(List.of(imgResponse1, imgResponse2))
+                .nickname(userDetails.getMember().getNickname())
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+
+        given(postService.updatePost(any(), anyLong(), any())).willReturn(response);
+
+        mockMvc.perform(patch("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postId").value(response.getPostId()))
+                .andExpect(jsonPath("$.title").value(response.getTitle()))
+                .andExpect(jsonPath("$.content").value(response.getContent()))
+                .andExpect(jsonPath("$.imageUrls[0].imageUrl").value(
+                        response.getImageUrls().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.nickname").value(response.getNickname()))
+                .andExpect(jsonPath("$.createdAt").value(response.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+                .andExpect(jsonPath("$.updatedAt").value(response.getUpdatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 수정 실패 - 수정 권한 없음")
+    void updatePost_Fail_NotMatch() throws Exception {
+
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        given(postService.updatePost(any(), anyLong(), any())).willThrow(new BoardException(CANNOT_UPDATE_POST));
+
+        mockMvc.perform(patch("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(CANNOT_UPDATE_POST.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(CANNOT_UPDATE_POST.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 수정 실패 - 게시물 없음")
+    void updatePost_Fail_NoPost() throws Exception {
+
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        given(postService.updatePost(any(), anyLong(), any())).willThrow(new BoardException(POST_NOT_FOUND));
+
+        mockMvc.perform(patch("/api/boards/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(POST_NOT_FOUND.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(POST_NOT_FOUND.getMessage()))
+                .andDo(print());
+    }
+
+
 }
