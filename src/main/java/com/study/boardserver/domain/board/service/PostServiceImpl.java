@@ -1,9 +1,7 @@
 package com.study.boardserver.domain.board.service;
 
 import com.study.boardserver.domain.awss3.service.AwsS3Service;
-import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
-import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
-import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
+import com.study.boardserver.domain.board.dto.post.*;
 import com.study.boardserver.domain.board.entity.Post;
 import com.study.boardserver.domain.board.entity.PostImage;
 import com.study.boardserver.domain.board.repository.PostImageRepository;
@@ -97,6 +95,44 @@ public class PostServiceImpl implements PostService {
         postRepository.delete(post);
         return getMessage("게시물이 삭제되었습니다.");
     }
+
+    @Override
+    public PostImageUrlResponse uploadPostImage(Long postId, MultipartFile file) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        String imgUrl = awsS3Service.uploadFile(file, DIR);
+
+        PostImage image = PostImage.builder()
+                .post(post)
+                .imgUrl(imgUrl)
+                .build();
+
+        postImageRepository.save(image);
+
+        return PostImageUrlResponse.builder()
+                .imageId(image.getId())
+                .imageUrl(image.getImgUrl())
+                .build();
+    }
+
+    @Override
+    public Map<String, String> deletePostImage(Long postId, Long postImageId) {
+
+        if(!postRepository.existsById(postId)) {
+            throw new BoardException(BoardErrorCode.POST_NOT_FOUND);
+        }
+
+        PostImage image = postImageRepository.findById(postImageId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_IMAGE_NOT_FOUND));
+
+        awsS3Service.deleteFile(image.getImgUrl(), DIR);
+        postImageRepository.delete(image);
+
+        return getMessage("이미지가 삭제되었습니다.");
+    }
+
 
     private void removeImages (List<PostImage> images) {
         for(PostImage image : images) {

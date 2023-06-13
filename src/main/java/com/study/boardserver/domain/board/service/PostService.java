@@ -1,7 +1,6 @@
 package com.study.boardserver.domain.board.service;
 
-import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
-import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
+import com.study.boardserver.domain.board.dto.post.*;
 import com.study.boardserver.domain.member.entity.Member;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,4 +18,14 @@ public interface PostService {
      * 삭제
      */
     Map<String, String> deletePost(Member member, Long postId);
+
+    /**
+     * 이미지 업로드
+     */
+    PostImageUrlResponse uploadPostImage(Long postId, MultipartFile file);
+
+    /**
+     * 이미지 삭제
+     */
+    Map<String, String> deletePostImage(Long postId, Long postImageId);
 }
