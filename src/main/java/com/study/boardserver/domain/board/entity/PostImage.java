@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class PostImage {
 
     @Id
+    @Column(name = "post_image_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
