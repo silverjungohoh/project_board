@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +108,7 @@ public class PostServiceImpl implements PostService {
         PostImage image = PostImage.builder()
                 .post(post)
                 .imgUrl(imgUrl)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         postImageRepository.save(image);
@@ -131,6 +133,34 @@ public class PostServiceImpl implements PostService {
         postImageRepository.delete(image);
 
         return getMessage("이미지가 삭제되었습니다.");
+    }
+
+    @Override
+    public PostUpdateResponse updatePost(Member member, Long postId, PostUpdateRequest request) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        if(!Objects.equals(post.getMember().getEmail(), member.getEmail())) {
+            throw new BoardException(BoardErrorCode.CANNOT_UPDATE_POST);
+        }
+
+        post.update(request.getTitle(), request.getContent());
+        postRepository.save(post);
+
+        List<PostImageUrlResponse> imgResponse = post.getPostImages().stream()
+                .map(PostImageUrlResponse :: fromEntity)
+                .collect(Collectors.toList());
+
+        return PostUpdateResponse.builder()
+                .postId(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .nickname(member.getNickname())
+                .imageUrls(imgResponse)
+                .build();
     }
 
 

@@ -28,4 +28,9 @@ public interface PostService {
      * 이미지 삭제
      */
     Map<String, String> deletePostImage(Long postId, Long postImageId);
+
+    /**
+     * 수정
+     */
+    PostUpdateResponse updatePost(Member member, Long postId, PostUpdateRequest request);
 }

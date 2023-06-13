@@ -37,4 +37,9 @@ public class Post extends BaseTimeEntity {
     public void addImage(PostImage image) {
         this.postImages.add(image);
     }
+
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
 }
