@@ -2,8 +2,15 @@ package com.study.boardserver.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
+import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
+import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
 import com.study.boardserver.domain.board.service.PostService;
+import com.study.boardserver.domain.member.entity.Member;
+import com.study.boardserver.domain.member.repository.MemberRepository;
+import com.study.boardserver.domain.member.type.MemberRole;
+import com.study.boardserver.domain.security.CustomUserDetails;
 import com.study.boardserver.global.error.exception.BoardException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,19 +19,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockPart;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.study.boardserver.global.error.type.BoardErrorCode.POST_IMAGE_NOT_FOUND;
 import static com.study.boardserver.global.error.type.BoardErrorCode.POST_NOT_FOUND;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -42,9 +53,27 @@ class PostControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private MemberRepository memberRepository;
+
     @MockBean
     private PostService postService;
 
+    private Member member;
+    private CustomUserDetails userDetails;
+
+    @BeforeEach
+    void setUp() {
+        member = Member.builder()
+                .id(1L)
+                .email("test123@test.com")
+                .nickname("nickname")
+                .role(MemberRole.ROLE_USER)
+                .build();
+
+        memberRepository.save(member);
+        userDetails = new CustomUserDetails(memberRepository.findById(1L).get());
+    }
 
     @Test
     @WithMockUser
@@ -141,6 +170,68 @@ class PostControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(POST_IMAGE_NOT_FOUND.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(POST_IMAGE_NOT_FOUND.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 작성 성공")
+    void writePost_Success() throws Exception {
+
+        String contentType = "image/png";
+
+        MockMultipartFile file1 = new MockMultipartFile("test1", "test1_2023.png", contentType, "test1".getBytes());
+        MockMultipartFile file2 = new MockMultipartFile("test2", "test2_2023.png", contentType, "test2".getBytes());
+
+        PostWriteRequest request = PostWriteRequest.builder()
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        String imgUrl1 = "https://image-bucket.s3.abc1.jpg";
+        String imgUrl2 = "https://image-bucket.s3.abc2.jpg";
+
+        PostImageUrlResponse imgResponse1 = PostImageUrlResponse.builder()
+                .imageId(1L)
+                .imageUrl(imgUrl1)
+                .build();
+
+        PostImageUrlResponse imgResponse2 = PostImageUrlResponse.builder()
+                .imageId(2L)
+                .imageUrl(imgUrl2)
+                .build();
+
+        LocalDateTime date = LocalDateTime.of(2023, 6, 12, 23, 59, 59);
+
+        PostWriteResponse response = PostWriteResponse.builder()
+                .postId(1L)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .imageUrls(List.of(imgResponse1, imgResponse2))
+                .nickname(member.getNickname())
+                .createdAt(date)
+                .build();
+
+        given(postService.writePost(any(), any(), anyList())).willReturn(response);
+
+        String requestJson = objectMapper.writeValueAsString(request);
+        MockPart data = new MockPart("post", requestJson.getBytes());
+        data.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(multipart("/api/boards")
+                        .file("images", file1.getBytes())
+                        .file("images", file2.getBytes())
+                        .part(data)
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.postId").value(response.getPostId()))
+                .andExpect(jsonPath("$.title").value(response.getTitle()))
+                .andExpect(jsonPath("$.content").value(response.getContent()))
+                .andExpect(jsonPath("$.imageUrls[0].imageUrl").value(
+                        response.getImageUrls().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.nickname").value(response.getNickname()))
+                .andExpect(jsonPath("$.createdAt").value(response.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
                 .andDo(print());
     }
 }
