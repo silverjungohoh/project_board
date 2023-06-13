@@ -1,8 +1,6 @@
 package com.study.boardserver.domain.board.controller;
 
-import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
-import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
-import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
+import com.study.boardserver.domain.board.dto.post.*;
 import com.study.boardserver.domain.board.service.PostService;
 import com.study.boardserver.domain.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,4 +57,15 @@ public class PostController {
         Map<String, String> result = postService.deletePostImage(postId, postImageId);
         return ResponseEntity.ok(result);
     }
+
+    @PatchMapping("/{postId}")
+    @Operation(summary = "게시판 글 수정")
+    public ResponseEntity<PostUpdateResponse> updatePost(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                         @RequestBody @Valid PostUpdateRequest request,
+                                                         @PathVariable Long postId) {
+
+        PostUpdateResponse response = postService.updatePost(userDetails.getMember(), postId, request);
+        return ResponseEntity.ok(response);
+    }
+
 }
