@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.board.controller;
 
+import com.study.boardserver.domain.board.dto.post.PostImageUrlResponse;
 import com.study.boardserver.domain.board.dto.post.PostWriteRequest;
 import com.study.boardserver.domain.board.dto.post.PostWriteResponse;
 import com.study.boardserver.domain.board.service.PostService;
@@ -39,6 +40,23 @@ public class PostController {
                                                           @PathVariable Long postId) {
 
         Map<String, String> result = postService.deletePost(userDetails.getMember(), postId);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/{postId}/images")
+    @Operation(summary = "이미지 등록")
+    public ResponseEntity<PostImageUrlResponse> uploadPostImage(@PathVariable Long postId,
+                                                                @RequestPart(value = "image", required = false) MultipartFile file) {
+
+        PostImageUrlResponse response = postService.uploadPostImage(postId, file);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{postId}/images/{postImageId}")
+    @Operation(summary = "이미지 삭제")
+    public ResponseEntity<Map<String, String>> deletePostImage(@PathVariable Long postId, @PathVariable Long postImageId) {
+
+        Map<String, String> result = postService.deletePostImage(postId, postImageId);
         return ResponseEntity.ok(result);
     }
 }
