@@ -1,5 +1,6 @@
 package com.study.boardserver.global.error.handler;
 
+import com.study.boardserver.global.error.exception.BoardException;
 import com.study.boardserver.global.error.exception.ImageException;
 import com.study.boardserver.global.error.exception.MemberAuthException;
 import com.study.boardserver.global.error.exception.MemberException;
@@ -71,5 +72,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+    }
+
+    @ExceptionHandler(BoardException.class)
+    public ResponseEntity<ErrorResponse> handleBoardException(BoardException e) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .status(e.getErrorCode().getStatus().value())
+                .message(e.getMessage())
+                .build();
+
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(response);
     }
 }
