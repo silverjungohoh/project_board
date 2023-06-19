@@ -14,6 +14,8 @@ import com.study.boardserver.global.error.type.BoardErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -70,5 +72,29 @@ public class CommentServiceImpl implements CommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public Map<String, String> deleteComment(Member member, Long postId, Long commentId) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.COMMENT_NOT_FOUND));
+
+        if(!Objects.equals(member.getEmail(), comment.getMember().getEmail())) {
+            throw new BoardException(BoardErrorCode.CANNOT_DELETE_COMMENT);
+        }
+
+        commentRepository.delete(comment);
+        post.removeComment(comment);
+        return getMessage("댓글이 삭제되었습니다.");
+    }
+
+    private static Map<String, String> getMessage(String message) {
+        Map<String, String> result = new HashMap<>();
+        result.put("message", message);
+        return result;
     }
 }
