@@ -27,4 +27,8 @@ public class Comment extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", updatable = false)
     private Member member;
+
+    public void update(String content) {
+        this.content = content;
+    }
 }
