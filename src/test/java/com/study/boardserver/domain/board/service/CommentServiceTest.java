@@ -19,10 +19,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
@@ -217,5 +217,120 @@ class CommentServiceTest {
         assertEquals(response.getContent(), request.getContent());
         assertEquals(response.getNickname(), member.getNickname());
         verify(commentRepository, times(1)).save(commentCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 실패 - 게시물 없음")
+    void deleteComment_Fail_NoPost() {
+
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("nickname")
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> commentService.deleteComment(member, 1L, 1L));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 실패 - 댓글 없음")
+    void deleteComment_Fail_NoComment() {
+
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("nickname")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(commentRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> commentService.deleteComment(member, 1L, 1L));
+
+        assertEquals(BoardErrorCode.COMMENT_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 실패 - 작성자 아님")
+    void deleteComment_Fail_NotMatch() {
+
+        Member member1 = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("nickname1")
+                .build();
+
+        Member member2 = Member.builder()
+                .id(2L)
+                .email("test234@test.com")
+                .nickname("nickname2")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        Comment comment = Comment.builder()
+                .id(1L)
+                .content("댓글")
+                .member(member1)
+                .post(post)
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(commentRepository.findById(anyLong())).willReturn(Optional.of(comment));
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> commentService.deleteComment(member2, 1L, 1L));
+
+        assertEquals(BoardErrorCode.CANNOT_DELETE_COMMENT, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 성공")
+    void deleteComment_Success() {
+
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("nickname")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목입니다")
+                .content("내용입니다")
+                .build();
+
+        Comment comment = Comment.builder()
+                .id(1L)
+                .content("댓글")
+                .member(member)
+                .post(post)
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(commentRepository.findById(anyLong())).willReturn(Optional.of(comment));
+
+        ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
+
+        Map<String, String> result = commentService.deleteComment(member, 1L, 1L);
+
+        assertNotNull(result.get("message"));
+        verify(commentRepository, times(1)).delete(commentCaptor.capture());
     }
 }
