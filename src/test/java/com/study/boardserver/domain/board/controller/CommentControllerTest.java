@@ -11,6 +11,7 @@ import com.study.boardserver.domain.member.repository.MemberRepository;
 import com.study.boardserver.domain.member.type.MemberRole;
 import com.study.boardserver.domain.security.CustomUserDetails;
 import com.study.boardserver.global.error.exception.BoardException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,9 +67,15 @@ class CommentControllerTest {
                 .role(MemberRole.ROLE_USER)
                 .build();
 
-        memberRepository.save(member);
-        userDetails = new CustomUserDetails(memberRepository.findById(1L).get());
+        memberRepository.saveAndFlush(member);
+        userDetails = new CustomUserDetails(member);
     }
+
+    @AfterEach
+    void afterEach() {
+        memberRepository.deleteAllInBatch();
+    }
+
 
     @Test
     @DisplayName("댓글 작성 실패 - 게시물 없음")
