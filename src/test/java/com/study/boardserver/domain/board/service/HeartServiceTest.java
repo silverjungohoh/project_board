@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.board.service;
 
+import com.study.boardserver.domain.board.dto.heart.HeartCountGetResponse;
 import com.study.boardserver.domain.board.entity.Heart;
 import com.study.boardserver.domain.board.entity.Post;
 import com.study.boardserver.domain.board.repository.HeartRepository;
@@ -224,5 +225,36 @@ class HeartServiceTest {
                 () -> heartService.deleteHeart(member2, 1L));
 
         assertEquals(BoardErrorCode.HEART_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("게시물 좋아요 개수 조회 성공")
+    void getHeartCountByPost_Success() {
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목")
+                .content("내용")
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(heartRepository.countByPost(any())).willReturn(100L);
+
+        HeartCountGetResponse response = heartService.getHeartCountByPost(1L);
+
+        assertEquals(response.getPostId(), 1L);
+        assertEquals(response.getHeartCnt(), 100L);
+    }
+
+    @Test
+    @DisplayName("게시물 좋아요 개수 조회 실패 - 게시물 없음")
+    void getHeartCountByPost_Fail_NoPost() {
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> heartService.getHeartCountByPost(1L));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
     }
 }
