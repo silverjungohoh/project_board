@@ -5,10 +5,7 @@ import com.study.boardserver.domain.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -24,6 +21,14 @@ public class HeartController {
                                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Map<String, String> result = heartService.pushHeart(userDetails.getMember(), postId);
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/{postId}/hearts")
+    public ResponseEntity<Map<String, String>> deleteHeart(@PathVariable Long postId,
+                                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Map<String, String> result = heartService.deleteHeart(userDetails.getMember(), postId);
         return ResponseEntity.ok(result);
     }
 }
