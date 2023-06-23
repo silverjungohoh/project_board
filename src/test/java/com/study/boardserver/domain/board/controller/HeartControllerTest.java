@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -128,6 +129,56 @@ class HeartControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(ALREADY_PUSH_HEART.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(ALREADY_PUSH_HEART.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("좋아요 취소 성공")
+    void deleteHeart_Success() throws Exception {
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "좋아요 취소");
+
+        given(heartService.deleteHeart(any(), anyLong())).willReturn(response);
+
+        mockMvc.perform(delete("/api/boards/{postId}/hearts", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(response.get("message")))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("좋아요 취소 실패 - 게시물 없음")
+    void deleteHeart_Fail_NoPost() throws Exception {
+
+        given(heartService.deleteHeart(any(), anyLong())).willThrow(new BoardException(POST_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/boards/{postId}/hearts", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(POST_NOT_FOUND.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(POST_NOT_FOUND.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("좋아요 취소 실패 - 좋아요 없음")
+    void deleteHeart_Fail_NoHeart() throws Exception {
+
+        given(heartService.deleteHeart(any(), anyLong())).willThrow(new BoardException(HEART_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/boards/{postId}/hearts", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(HEART_NOT_FOUND.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(HEART_NOT_FOUND.getMessage()))
                 .andDo(print());
     }
 }
