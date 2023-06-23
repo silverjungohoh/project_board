@@ -140,4 +140,89 @@ class HeartServiceTest {
 
         assertEquals(BoardErrorCode.ALREADY_PUSH_HEART, exception.getErrorCode());
     }
+
+    @Test
+    @DisplayName("좋아요 취소 성공")
+    void deleteHeart_Success() {
+
+        Member member1 = Member.builder()
+                .id(1L)
+                .email("test1@test.com")
+                .build();
+
+        Member member2 = Member.builder()
+                .id(2L)
+                .email("test2@test.com")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목")
+                .content("내용")
+                .member(member1)
+                .build();
+
+        Heart heart = Heart.builder()
+                .id(1L)
+                .member(member2)
+                .post(post)
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(heartRepository.findByPostAndMember(any(), any())).willReturn(Optional.of(heart));
+
+        ArgumentCaptor<Heart> heartCaptor = ArgumentCaptor.forClass(Heart.class);
+
+        Map<String, String> result = heartService.deleteHeart(member2, 1L);
+
+        assertNotNull(result.get("message"));
+        verify(heartRepository, times(1)).delete(heartCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("좋아요 취소 실패 - 게시물 없음")
+    void deleteHeart_Fail_NoPost() {
+
+        Member member = Member.builder()
+                .id(1L)
+                .email("test@test.com")
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> heartService.deleteHeart(member, 1L));
+
+        assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("좋아요 취소 실패 - 좋아요 없음")
+    void deleteHeart_Fail_NoHeart() {
+
+        Member member1 = Member.builder()
+                .id(1L)
+                .email("test1@test.com")
+                .build();
+
+        Member member2 = Member.builder()
+                .id(2L)
+                .email("test2@test.com")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("제목")
+                .content("내용")
+                .member(member1)
+                .build();
+
+        given(postRepository.findById(anyLong())).willReturn(Optional.of(post));
+        given(heartRepository.findByPostAndMember(any(), any())).willReturn(Optional.empty());
+
+        BoardException exception = assertThrows(BoardException.class,
+                () -> heartService.deleteHeart(member2, 1L));
+
+        assertEquals(BoardErrorCode.HEART_NOT_FOUND, exception.getErrorCode());
+    }
 }
