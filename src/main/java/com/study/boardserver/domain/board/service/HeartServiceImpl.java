@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.board.service;
 
+import com.study.boardserver.domain.board.dto.heart.HeartCountGetResponse;
 import com.study.boardserver.domain.board.entity.Heart;
 import com.study.boardserver.domain.board.entity.Post;
 import com.study.boardserver.domain.board.repository.HeartRepository;
@@ -57,6 +58,18 @@ public class HeartServiceImpl implements HeartService {
         heartRepository.delete(heart);
 
         return getMessage("좋아요 취소");
+    }
+
+    @Override
+    public HeartCountGetResponse getHeartCountByPost(Long postId) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        return HeartCountGetResponse.builder()
+                .postId(postId)
+                .heartCnt(heartRepository.countByPost(post))
+                .build();
     }
 
     private static Map<String, String> getMessage(String message) {
