@@ -16,7 +16,7 @@ public enum BoardErrorCode {
     CANNOT_UPDATE_COMMENT(HttpStatus.FORBIDDEN, "댓글 수정 권한은 작성자에게 있습니다."),
     CANNOT_DELETE_COMMENT(HttpStatus.FORBIDDEN, "댓글 삭제 권한은 작성자에게 있습니다."),
     CANNOT_PUSH_HEART(HttpStatus.BAD_REQUEST, "자신의 게시물에 좋아요를 누를 수 없습니다."),
-    ALREADY_PUSH_HEART(HttpStatus.BAD_REQUEST, "이미 게시물에 좋아요를 눌렀습니다.");
+    ALREADY_PUSH_HEART(HttpStatus.CONFLICT, "이미 게시물에 좋아요를 눌렀습니다.");
 
     private final HttpStatus status;
     private final String message;
