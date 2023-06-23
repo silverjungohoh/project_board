@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.board.controller;
 
+import com.study.boardserver.domain.board.dto.heart.HeartCountGetResponse;
 import com.study.boardserver.domain.board.service.HeartService;
 import com.study.boardserver.domain.member.entity.Member;
 import com.study.boardserver.domain.member.repository.MemberRepository;
@@ -27,8 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -179,6 +179,43 @@ class HeartControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(HEART_NOT_FOUND.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(HEART_NOT_FOUND.getMessage()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 좋아요 개수 조회 성공")
+    void getHeartCountByPost_Success() throws Exception {
+
+        HeartCountGetResponse response = HeartCountGetResponse.builder()
+                .postId(1L)
+                .heartCnt(10L)
+                .build();
+
+        given(heartService.getHeartCountByPost(anyLong())).willReturn(response);
+
+        mockMvc.perform(get("/api/boards/{postId}/hearts", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postId").value(response.getPostId()))
+                .andExpect(jsonPath("$.heartCnt").value(response.getHeartCnt()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("게시물 좋아요 개수 조회 실패 - 게시물 없음")
+    void getHeartCountByPost_Fail_NoPost() throws Exception {
+
+        given(heartService.getHeartCountByPost(anyLong())).willThrow(new BoardException(POST_NOT_FOUND));
+
+        mockMvc.perform(get("/api/boards/{postId}/hearts", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(userDetails)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(POST_NOT_FOUND.getStatus().value()))
+                .andExpect(jsonPath("$.message").value(POST_NOT_FOUND.getMessage()))
                 .andDo(print());
     }
 }
