@@ -1,5 +1,6 @@
 package com.study.boardserver.domain.board.controller;
 
+import com.study.boardserver.domain.board.dto.heart.HeartCountGetResponse;
 import com.study.boardserver.domain.board.service.HeartService;
 import com.study.boardserver.domain.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +31,12 @@ public class HeartController {
 
         Map<String, String> result = heartService.deleteHeart(userDetails.getMember(), postId);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{postId}/hearts")
+    public ResponseEntity<HeartCountGetResponse> getHeartCountByPost(@PathVariable Long postId) {
+
+        HeartCountGetResponse response = heartService.getHeartCountByPost(postId);
+        return ResponseEntity.ok(response);
     }
 }
