@@ -9,5 +9,10 @@ public interface HeartService {
     /**
      * 좋아요 등록
      */
-    Map<String, String> pushHeart(Member member, long postId);
+    Map<String, String> pushHeart(Member member, Long postId);
+
+    /**
+     * 좋아요 취소
+     */
+    Map<String, String> deleteHeart(Member member, Long postId);
 }

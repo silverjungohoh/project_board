@@ -22,7 +22,7 @@ public class HeartServiceImpl implements HeartService {
     private final HeartRepository heartRepository;
 
     @Override
-    public Map<String, String> pushHeart(Member member, long postId) {
+    public Map<String, String> pushHeart(Member member, Long postId) {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
@@ -43,6 +43,20 @@ public class HeartServiceImpl implements HeartService {
         heartRepository.save(heart);
 
         return getMessage("좋아요 등록");
+    }
+
+    @Override
+    public Map<String, String> deleteHeart(Member member, Long postId) {
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+
+        Heart heart = heartRepository.findByPostAndMember(post, member)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.HEART_NOT_FOUND));
+
+        heartRepository.delete(heart);
+
+        return getMessage("좋아요 취소");
     }
 
     private static Map<String, String> getMessage(String message) {
